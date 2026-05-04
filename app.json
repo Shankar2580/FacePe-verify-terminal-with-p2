@@ -1,0 +1,20 @@
+{
+  "expo": {
+    "name": "FacePe Terminal",
+    "slug": "facepe-terminal",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "FacePe Terminal uses the camera to capture customer face images for consented identity verification."
+      }
+    },
+    "android": {
+      "permissions": ["CAMERA"],
+      "softwareKeyboardLayoutMode": "pan"
+    }
+  }
+}
