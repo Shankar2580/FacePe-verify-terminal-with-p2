@@ -5,7 +5,15 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "assetBundlePatterns": ["**/*"],
+    "icon": "./assets/fplogo.png",
+    "splash": {
+      "image": "./assets/fplogo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
@@ -13,8 +21,16 @@
       }
     },
     "android": {
-      "permissions": ["CAMERA"],
-      "softwareKeyboardLayoutMode": "pan"
+      "permissions": [
+        "CAMERA",
+        "CAMERA"
+      ],
+      "softwareKeyboardLayoutMode": "pan",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/fplogo.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.vu2s222.facepeterminal"
     }
   }
 }

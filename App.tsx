@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
+  Animated,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -473,15 +474,7 @@ function AppInner() {
             </View>
 
             <View style={styles.idleCenter}>
-              <View style={styles.pulseWrap}>
-                <View style={styles.pulseOuter} />
-                <View style={styles.pulseMid} />
-                <View style={styles.pulseCoreShadow}>
-                  <View style={styles.pulseCore}>
-                    <Image source={require('./assets/fplogo.png')} style={styles.pulseLogo} />
-                  </View>
-                </View>
-              </View>
+              <PulsingLogo />
               <Text style={styles.idleStatusLabel}>Terminal Ready</Text>
               <Text style={styles.idleStatusText}>Ready for customer</Text>
               <Text style={styles.idleHint}>
@@ -536,6 +529,13 @@ function AppInner() {
             <Text style={styles.captureTitle}>{task?.task_type === 'face_registration' ? 'Face registration' : 'Face verification'}</Text>
             <Action label={permission?.granted ? 'Capture face' : 'Allow camera'} onPress={captureAndSubmit} disabled={busy} />
           </View>
+          {busy && (
+            <View style={styles.captureOverlay}>
+              <Spinner />
+              <Text style={styles.captureOverlayText}>Verifying...</Text>
+              <Text style={styles.captureOverlaySubtext}>Please hold still</Text>
+            </View>
+          )}
         </View>
       )}
 
@@ -599,6 +599,76 @@ function Action({
     <Pressable onPress={onPress} disabled={disabled} style={[styles.button, secondary && styles.secondaryButton, disabled && styles.disabled]}>
       <Text style={[styles.buttonText, secondary && styles.secondaryButtonText]}>{label}</Text>
     </Pressable>
+  );
+}
+
+function PulsingLogo() {
+  const scale1 = useRef(new Animated.Value(1)).current;
+  const scale2 = useRef(new Animated.Value(1)).current;
+  const opacity1 = useRef(new Animated.Value(0.4)).current;
+  const opacity2 = useRef(new Animated.Value(0.3)).current;
+
+  useEffect(() => {
+    const createPulse = (scale: Animated.Value, opacity: Animated.Value, delay: number) => {
+      return Animated.loop(
+        Animated.sequence([
+          Animated.delay(delay),
+          Animated.parallel([
+            Animated.timing(scale, { toValue: 1.3, duration: 1500, useNativeDriver: true }),
+            Animated.timing(opacity, { toValue: 0, duration: 1500, useNativeDriver: true }),
+          ]),
+          Animated.parallel([
+            Animated.timing(scale, { toValue: 1, duration: 0, useNativeDriver: true }),
+            Animated.timing(opacity, { toValue: opacity === opacity1 ? 0.4 : 0.3, duration: 0, useNativeDriver: true }),
+          ]),
+        ])
+      );
+    };
+
+    const anim1 = createPulse(scale1, opacity1, 0);
+    const anim2 = createPulse(scale2, opacity2, 750);
+
+    anim1.start();
+    anim2.start();
+
+    return () => {
+      anim1.stop();
+      anim2.stop();
+    };
+  }, []);
+
+  return (
+    <View style={styles.pulseWrap}>
+      <Animated.View style={[styles.pulseRing, { transform: [{ scale: scale1 }], opacity: opacity1 }]} />
+      <Animated.View style={[styles.pulseRing, { transform: [{ scale: scale2 }], opacity: opacity2, width: 160, height: 160, borderRadius: 80 }]} />
+      <View style={styles.pulseCoreShadow}>
+        <View style={styles.pulseCore}>
+          <Image source={require('./assets/fplogo.png')} style={styles.pulseLogo} />
+        </View>
+      </View>
+    </View>
+  );
+}
+
+function Spinner() {
+  const spinValue = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const anim = Animated.loop(
+      Animated.timing(spinValue, { toValue: 1, duration: 1000, useNativeDriver: true })
+    );
+    anim.start();
+    return () => anim.stop();
+  }, []);
+
+  const spin = spinValue.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
+
+  return (
+    <View style={styles.spinnerContainer}>
+      <Animated.View style={[styles.spinner, { transform: [{ rotate: spin }] }]}>
+        <View style={styles.spinnerDot} />
+      </Animated.View>
+    </View>
   );
 }
 
@@ -885,6 +955,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 32,
   },
+  pulseRing: {
+    position: 'absolute',
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: 'rgba(99, 102, 241, 0.2)',
+  },
   pulseOuter: {
     position: 'absolute',
     width: 200,
@@ -1069,6 +1146,46 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '800',
     textAlign: 'center',
+  },
+  captureOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 100,
+  },
+  captureOverlayText: {
+    color: '#ffffff',
+    fontSize: 20,
+    fontWeight: '700',
+    marginTop: 20,
+  },
+  captureOverlaySubtext: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 14,
+    marginTop: 8,
+  },
+  spinnerContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  spinner: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    borderWidth: 4,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderTopColor: '#6366f1',
+  },
+  spinnerDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#6366f1',
   },
   candidate: {
     borderWidth: 1,
