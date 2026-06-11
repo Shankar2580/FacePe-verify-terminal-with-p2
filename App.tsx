@@ -80,6 +80,7 @@ function AppInner() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [livenessResult, setLivenessResult] = useState<{ isLive: boolean; confidence: number; message: string } | null>(null);
 
   const deviceId = auth?.terminal_id || 'facepe-terminal';
 
@@ -132,6 +133,9 @@ function AppInner() {
             }
           }
         }
+        // Reset liveness state when starting camera
+        await p2Camera.resetLiveness();
+        setLivenessResult(null);
         await p2Camera.startStreams();
       } catch (err: any) {
         setError(`Failed to start P2 camera: ${err.message}`);
@@ -151,9 +155,17 @@ function AppInner() {
 
     const subscription = AppState.addEventListener('change', handleAppStateChange);
 
+    // Add liveness event listener
+    p2Camera.addEventListener({
+      onLivenessResult: (result) => {
+        setLivenessResult(result);
+      },
+    });
+
     return () => {
       clearTimeout(timer);
       subscription.remove();
+      p2Camera.removeAllListeners();
       p2Camera.stopStreams().catch(() => {});
     };
   }, [mode]);
@@ -250,6 +262,15 @@ function AppInner() {
     setError('');
     try {
       await updateTaskStatus(task.id, 'in_progress');
+
+      // Check liveness before capture
+      const liveness = await p2Camera.checkLiveness();
+      if (!liveness.isLive) {
+        setError(`Liveness check failed: ${liveness.message || 'Please ensure a real face is in front of the camera'}`);
+        await updateTaskStatus(task.id, 'failed', undefined, 'Liveness check failed');
+        return;
+      }
+
       const photo = await p2Camera.capturePhoto();
       if (!photo?.uri) throw new Error('Could not capture image');
 
@@ -560,6 +581,13 @@ function AppInner() {
           <RGBCameraView style={[styles.camera, { transform: [{ rotate: '90deg' }] }]} />
           <View style={styles.captureBar}>
             <Text style={styles.captureTitle}>{task?.task_type === 'face_registration' ? 'Face registration' : 'Face verification'}</Text>
+            {livenessResult && (
+              <View style={[styles.livenessBadge, { backgroundColor: livenessResult.isLive ? '#10b981' : '#ef4444' }]}>
+                <Text style={styles.livenessBadgeText}>
+                  {livenessResult.isLive ? '✓ LIVE' : '✗ FAKE'} ({Math.round(livenessResult.confidence * 100)}%)
+                </Text>
+              </View>
+            )}
             <Action label="Capture face" onPress={captureAndSubmit} disabled={busy} />
           </View>
           {busy && (
@@ -1179,6 +1207,17 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '800',
     textAlign: 'center',
+  },
+  livenessBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    alignSelf: 'center',
+  },
+  livenessBadgeText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '700',
   },
   captureOverlay: {
     position: 'absolute',

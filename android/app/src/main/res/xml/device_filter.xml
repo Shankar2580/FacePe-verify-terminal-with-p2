@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Orbbec P2 RGB camera -->
+    <usb-device vendor-id="11205" product-id="1310" />
+    <!-- Orbbec P2 Depth/IR camera -->
+    <usb-device vendor-id="11205" product-id="1566" />
+</resources>

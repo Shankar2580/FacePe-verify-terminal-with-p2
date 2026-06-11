@@ -42,7 +42,7 @@ public class OpenNIEngine {
     }
 
     private static final String TAG = "OpenNIEngine";
-    private static final String ACTION_PERM = "ai.facepe.merchantapp.USB_PERM_DEPTH";
+    private static final String ACTION_PERM = "com.vu2s222.facepeterminal.USB_PERM_DEPTH";
     private static final int VID = 0x2bc5;
     private static final int PID_DEPTH = 0x061e;
 
