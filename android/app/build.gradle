@@ -179,4 +179,7 @@ dependencies {
     } else {
         implementation jscFlavor
     }
+
+    // P2 Camera dependencies
+    implementation files('libs/openni2.3.jar')
 }

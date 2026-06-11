@@ -1,6 +1,7 @@
+import Constants from 'expo-constants';
 import type { TerminalAuthResponse, TerminalTask } from './types';
 
-const rawBaseUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8004/fv';
+const rawBaseUrl = Constants.expoConfig?.extra?.EXPO_PUBLIC_API_URL || 'https://api.dev.facepe.ai/fv';
 export const API_BASE_URL = rawBaseUrl.replace(/\/+$/, '').endsWith('/fv')
   ? rawBaseUrl.replace(/\/+$/, '')
   : `${rawBaseUrl.replace(/\/+$/, '')}/fv`;

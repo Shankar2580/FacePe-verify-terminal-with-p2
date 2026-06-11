@@ -5,9 +5,9 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "icon": "./assets/fplogo.png",
+    "icon": "./assets/AppIcon.png",
     "splash": {
-      "image": "./assets/fplogo.png",
+      "image": "./assets/AppIcon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -27,10 +27,17 @@
       ],
       "softwareKeyboardLayoutMode": "pan",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/fplogo.png",
+        "foregroundImage": "./assets/AppIcon.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.vu2s222.facepeterminal"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "780256bb-1249-46e1-80d2-d5f45fae92cf"
+      },
+      "EXPO_PUBLIC_API_URL": "https://api.dev.facepe.ai/fv",
+      "APP_ENV": "dev"
     }
   }
 }

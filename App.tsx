@@ -10,11 +10,14 @@ import {
   Text,
   TextInput,
   View,
+  PermissionsAndroid,
+  AppState,
 } from 'react-native';
-import { CameraView, useCameraPermissions } from 'expo-camera';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { p2Camera } from './src/p2Camera';
+import { RGBCameraView } from './src/components/RGBCameraView';
 import {
   enrollFace,
   getNextTask,
@@ -61,9 +64,7 @@ export default function App() {
 }
 
 function AppInner() {
-  const cameraRef = useRef<CameraView>(null);
   const loginScrollRef = useRef<ScrollView>(null);
-  const [permission, requestPermission] = useCameraPermissions();
   const [terminalCode, setTerminalCode] = useState('');
   const [terminalName, setTerminalName] = useState('');
   const [branchCode, setBranchCode] = useState('');
@@ -114,6 +115,48 @@ function AppInner() {
       clearInterval(interval);
     };
   }, [auth?.terminal_id, auth?.access_token, task?.id]);
+
+  // P2 Camera lifecycle management
+  useEffect(() => {
+    if (mode !== 'capture' || !p2Camera.isAvailable()) return;
+
+    const startP2 = async () => {
+      try {
+        if (Platform.OS === 'android') {
+          const hasPermission = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.CAMERA);
+          if (!hasPermission) {
+            const granted = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.CAMERA);
+            if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+              setError('Camera permission denied');
+              return;
+            }
+          }
+        }
+        await p2Camera.startStreams();
+      } catch (err: any) {
+        setError(`Failed to start P2 camera: ${err.message}`);
+      }
+    };
+
+    // Delay to ensure RGBCameraView mounts first
+    const timer = setTimeout(() => startP2(), 500);
+
+    const handleAppStateChange = (nextAppState: string) => {
+      if (nextAppState === 'background' || nextAppState === 'inactive') {
+        p2Camera.stopStreams().catch(() => {});
+      } else if (nextAppState === 'active' && mode === 'capture') {
+        startP2();
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+
+    return () => {
+      clearTimeout(timer);
+      subscription.remove();
+      p2Camera.stopStreams().catch(() => {});
+    };
+  }, [mode]);
 
   const receiveTask = async (nextTask: TerminalTask) => {
     setTask(nextTask);
@@ -203,15 +246,11 @@ function AppInner() {
 
   const captureAndSubmit = async () => {
     if (!task) return;
-    if (!permission?.granted) {
-      await requestPermission();
-      return;
-    }
     setBusy(true);
     setError('');
     try {
       await updateTaskStatus(task.id, 'in_progress');
-      const photo = await cameraRef.current?.takePictureAsync({ quality: 0.85 });
+      const photo = await p2Camera.capturePhoto();
       if (!photo?.uri) throw new Error('Could not capture image');
 
       if (task.task_type === 'face_registration') {
@@ -518,16 +557,10 @@ function AppInner() {
 
       {mode === 'capture' && (
         <View style={styles.cameraScreen}>
-          {permission?.granted ? (
-            <CameraView ref={cameraRef} style={styles.camera} facing="front" />
-          ) : (
-            <View style={styles.cameraFallback}>
-              <Text style={styles.body}>Camera permission is required.</Text>
-            </View>
-          )}
+          <RGBCameraView style={[styles.camera, { transform: [{ rotate: '90deg' }] }]} />
           <View style={styles.captureBar}>
             <Text style={styles.captureTitle}>{task?.task_type === 'face_registration' ? 'Face registration' : 'Face verification'}</Text>
-            <Action label={permission?.granted ? 'Capture face' : 'Allow camera'} onPress={captureAndSubmit} disabled={busy} />
+            <Action label="Capture face" onPress={captureAndSubmit} disabled={busy} />
           </View>
           {busy && (
             <View style={styles.captureOverlay}>
